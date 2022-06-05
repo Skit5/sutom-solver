@@ -4,7 +4,6 @@ console.log("Chargement du lexique, veuillez patienter...");
 const fs = require('fs');
 const srcFile = 'data/dict.txt'
 
-//let mots = tailles = lettres = [];
 let mots = [];
 
 fs.readFile(srcFile, async (err, data) => {
@@ -12,10 +11,6 @@ fs.readFile(srcFile, async (err, data) => {
 
     mots = data.toString().split(' ');
     console.log("Lexique chargé. Démarrage...");
-    /*mots.forEach((mot,k) => {
-        tailles[mot.length] = (tailles[mot.length] || []).concat(mot);
-        lettres[mot[0]] = (lettres[mot[0]] || []).concat(mot);
-    });*/
 
     await run();
 });
@@ -24,32 +19,30 @@ class GrilleDeMocktus {
 
     constructor(selection) {
         this.limiteEssais = 6; // nombre maximum de tentatives
-        // génération de grille
-        if(typeof selection === 'string' && selection) {
-            while (mots.find(m => m === selection)) {
-                rl.question("Ce mot n'est pas dans notre dictionnaire, veuillez en proposer un autre", function (proposition) {
-                    if (typeof proposition === 'string' && proposition) {
-                        selection = proposition;
-                    }
-                    rl.close();
-                });
-            }
-            this.word2guess = GrilleDeMocktus.normalizeInput(selection);
-            console.log("Votre mot est validé.");
-        }else if(typeof selection === 'number' && selection){
-            //const [min, max] =  this.getLengthIndices(selection);
-            //const this.getStartLengthIndex(selection);
-            while (mots.filter(m => (m.length === selection)).length === 0) {
-                rl.question("Ce mot n'est pas dans notre dictionnaire, veuillez en proposer un autre", function (proposition) {
-                    if (typeof proposition === 'number') {
-                        selection = proposition;
-                    }
-                    rl.close();
-                });
+
+        // construction de la grille
+        //}else if(typeof selection === 'number' && selection){
+        if(selection && Number.isInteger(Number(selection))){
+            selection = Number(selection);
+            while (!mots.find(m => (m.length === selection))) {
+                let proposition = rl.question("Il n'y a pas de mot de cette taille dans notre dictionnaire, veuillez en proposer un autre:\n");
+                if (Number.isInteger(Number(proposition))) {
+                    selection = Number(proposition);
+                }
             }
             const indices = this.getIndices(selection);
             this.word2guess = mots[indices.startIndex + Math.floor(Math.random() * (indices.stopIndex - indices.startIndex))];
+            //console.log(this.word2guess);
             console.log("Un mot de %s lettres a été choisi.", selection);
+        }else if(typeof selection === 'string' && selection) {
+            while (mots.find(m => m === selection)) {
+                let proposition = rl.question("Ce mot n'est pas dans notre dictionnaire, veuillez en proposer un autre:\n");
+                if (typeof proposition === 'string' && proposition) {
+                    selection = proposition;
+                }
+            }
+            this.word2guess = GrilleDeMocktus.normalizeInput(selection);
+            console.log("Votre mot est validé.");
         }else {
             this.word2guess = mots[Math.floor(Math.random() * mots.length)];
             console.log("Un mot a été choisi au hasard pour vous.");
@@ -75,52 +68,32 @@ class GrilleDeMocktus {
         const ligneInitiale = this.word2guess[0] + '-'.repeat(this.word2guess.length - 1);
         console.log(ligneInitiale)
 
-        for (let essai = 0; essai < this.limiteEssais; essai++) {
+        for (let essai = 0; essai < this.limiteEssais;) {
             let validInput = false;
             let userInput;
-            //console.log('no valid input yet')
             while (!validInput) {
-                //let response = new Promise(function (myResolve, myReject) {
-                    /*rl.question("", function (tentative) {
-                        if ((typeof tentative == 'undefined') || !tentative) {
-                            if(rl.keyInYN("Veux-tu quitter?"))
-                                validInput = true;
-                        } else {
-                            tentative = GrilleDeMocktus.normalizeInput(tentative);
-                            validInput = _this.isValid(tentative);
-                            if (validInput)
-                                userInput = tentative;
-                        }
-                    });*/
                 let tentative = rl.question("");
                 if ((typeof tentative == 'undefined') || !tentative) {
-                    if(rl.keyInYN("Veux-tu quitter?"))
+                    if(rl.keyInYN("Voulez-vous quitter la partie?"))
                         validInput = true;
                 }else{
                     tentative = GrilleDeMocktus.normalizeInput(tentative);
                     validInput = _this.isValid(tentative);
-                    if (validInput)
+                    if (validInput) {
                         userInput = tentative;
+                        essai += 1;
+                    }
                 }
-                console.log('and done')
-
             }
 
-                /*console.log('wait')
-                await response.then((value) => {
-                    console.log('done %s', value)
-                });*/
-
-        console.log('and out')
-        if (this.verify(userInput)){
-            console.log("\nFélicitations! Vous venez de trouver le bon mot!");
-            break;
+            if (this.verify(userInput)){
+                console.log("\nFélicitations! Vous venez de trouver le bon mot!");
+                break;
+            }else if(essai === this.limiteEssais-1){
+                console.log("\nVous n'êtes pas parvenu à trouver le mot %s.\nPlus de chance la prochaine fois!",this.word2guess);
+            }
         }
 
-            console.log('and pass')
-        }
-
-        console.log('and finished')
     }
 
     getIndices(taille,lettre){ //taille est obligatoire, sinon il n'y a pas de boundaries, lettre est une option
@@ -185,7 +158,6 @@ class GrilleDeMocktus {
     }
 
     verify(userInput){
-        console.log("Userinput is %s",userInput);
         if((typeof userInput === 'undefined') || !userInput)
             return false;
 
@@ -197,57 +169,28 @@ class GrilleDeMocktus {
         const symbolRouge = 'X', symbolJaune = '~', symbolVide ='-';
         buffOut.fill(symbolVide);
 
-        console.log(buffOut);
         userInput.split('').forEach((lettre,cle) => {
             if(lettre === word2guessSplit[cle]){
                 buffMot[cle] = '';
                 buffOut[cle] = symbolRouge
-                console.log(lettre+' '+cle);
             }
         });
-        console.log(buffOut);
         userInput.split('').forEach((lettre,cle) => {
             if(buffOut[cle] !== symbolRouge){
                 testValue = false;
 
                 const matchedLetterIndex = buffMot.findIndex(l => l === lettre);
-                console.log('index %s',matchedLetterIndex);
                 if(matchedLetterIndex >= 0){
                     buffMot[matchedLetterIndex] = '';
-                    buffOut[matchedLetterIndex] = symbolJaune
+                    buffOut[cle] = symbolJaune
                 }
-                /*if(lettre in buffMot){}
-                buffMot[cle] = '';
-                buffOut[cle] = symbolRouge*/
             }
         });
         console.log(buffOut.join(''));
         return testValue;
     }
-
-    isInDict(selection) {
-        return false;
-    }
 }
-
-//const readline = require("readline");
-//const Console = require("console");
-/*const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});*/
 const rl = require('readline-sync')
-
-/*rl.question("What is your name ? ", function(name) {
-    rl.question("Where do you live ? ", function(country) {
-        console.log(`${name}, is a citizen of ${country}`);
-        rl.close();
-    });
-});
-rl.on("close", function() {
-    console.log("\nBYE BYE !!!");
-    process.exit(0);
-});*/
 
 async function run() {
     // Accueil de l'utilisateur
@@ -256,33 +199,12 @@ async function run() {
     // Demande à l'utilisateur de configurer sa grille
     let grilleDeMocktus;
     let exitToken = false;
-    //let response = await new Promise(resolve => {
-    //let response = new Promise(function(myResolve, myReject) {
     let selection = rl.question("Quelle grille voulez-vous? Entrez un de ces paramètres: [string=mot;nombre=taille;rien=random]\n");
     grilleDeMocktus = new GrilleDeMocktus(selection);
-    console.log('Votre sélection %s vient de générer une nouvelle grille de Mocktus.', selection);
-        //myResolve(selection);
-    grilleDeMocktus.play();
-    //});
-    //grilleDeMocktus.play();
-    //});
-    //response.then((value) => {grilleDeMocktus.play()});
-    /*rl.question("Quelle grille voulez-vous? Entrez un de ces paramètres: [string=mot;nombre=taille;rien=random]", await function (selection) {
-        grilleDeMocktus = new GrilleDeMocktus(selection);
-        console.log('Votre sélection ${selection} vient de générer une nouvelle grille de Mocktus.');
-        grilleDeMocktus.play();
-    })*/
-    //});
-    /*while (!exitToken) {
-        response().then((value)=>{
-            grilleDeMocktus.play();
-        });
-    }*/
-    //rl.close();
-
+    console.log('Votre sélection vient de générer une nouvelle grille de Mocktus.', selection);
 
     // Lance la partie de GrilleDeMocktus
-    //grilleDeMocktus.play();
+    grilleDeMocktus.play();
 
     // Ajoute le score aux points
     // Propose une nouvelle partie
