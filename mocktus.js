@@ -80,35 +80,42 @@ class GrilleDeMocktus {
             let userInput;
             //console.log('no valid input yet')
             while (!validInput) {
-                let response = new Promise(function (myResolve, myReject) {
-                    rl.question("", function (tentative) {
+                //let response = new Promise(function (myResolve, myReject) {
+                    /*rl.question("", function (tentative) {
                         if ((typeof tentative == 'undefined') || !tentative) {
-                            rl.question("Veux-tu quitter? [y/N]", function (resp) {
-                                if (resp === ('y' || 'Y'))
-                                    validInput = true;
-                            });
+                            if(rl.keyInYN("Veux-tu quitter?"))
+                                validInput = true;
                         } else {
                             tentative = GrilleDeMocktus.normalizeInput(tentative);
                             validInput = _this.isValid(tentative);
                             if (validInput)
                                 userInput = tentative;
                         }
-                    });
-                });
+                    });*/
+                let tentative = rl.question("");
+                if ((typeof tentative == 'undefined') || !tentative) {
+                    if(rl.keyInYN("Veux-tu quitter?"))
+                        validInput = true;
+                }else{
+                    tentative = GrilleDeMocktus.normalizeInput(tentative);
+                    validInput = _this.isValid(tentative);
+                    if (validInput)
+                        userInput = tentative;
+                }
+                console.log('and done')
 
-                console.log('wait')
+            }
+
+                /*console.log('wait')
                 await response.then((value) => {
                     console.log('done %s', value)
-                });
+                });*/
 
-                console.log('and done')
-            }
-
-            console.log('and out')
-            if (this.verify(userInput)){
-                console.log("\n Félicitations! Vous venez de trouver le bon mot!");
-                break;
-            }
+        console.log('and out')
+        if (this.verify(userInput)){
+            console.log("\nFélicitations! Vous venez de trouver le bon mot!");
+            break;
+        }
 
             console.log('and pass')
         }
@@ -182,33 +189,39 @@ class GrilleDeMocktus {
         if((typeof userInput === 'undefined') || !userInput)
             return false;
 
-        let buffMot = this.word2guess;
+        let buffMot = this.word2guess.split('');
+        let word2guessSplit = this.word2guess.split('');
         let buffOut = new Array(this.word2guess.length);
         let testValue = true;
         // symbol definition
-        const symbolRouge = 'X', symbolJaune = '~';
+        const symbolRouge = 'X', symbolJaune = '~', symbolVide ='-';
+        buffOut.fill(symbolVide);
 
-        userInput.forEach((lettre,cle) => {
-            if(lettre === this.word2guess[cle]){
+        console.log(buffOut);
+        userInput.split('').forEach((lettre,cle) => {
+            if(lettre === word2guessSplit[cle]){
                 buffMot[cle] = '';
                 buffOut[cle] = symbolRouge
+                console.log(lettre+' '+cle);
             }
         });
-        userInput.forEach((lettre,cle) => {
+        console.log(buffOut);
+        userInput.split('').forEach((lettre,cle) => {
             if(buffOut[cle] !== symbolRouge){
                 testValue = false;
 
-                const matchedLetterIndex = buffMot.findIndex(l => l === lettre)
+                const matchedLetterIndex = buffMot.findIndex(l => l === lettre);
+                console.log('index %s',matchedLetterIndex);
                 if(matchedLetterIndex >= 0){
                     buffMot[matchedLetterIndex] = '';
                     buffOut[matchedLetterIndex] = symbolJaune
                 }
-                if(lettre in buffMot){}
+                /*if(lettre in buffMot){}
                 buffMot[cle] = '';
-                buffOut[cle] = symbolRouge
+                buffOut[cle] = symbolRouge*/
             }
         });
-        console.log(buffOut);
+        console.log(buffOut.join(''));
         return testValue;
     }
 
@@ -217,12 +230,13 @@ class GrilleDeMocktus {
     }
 }
 
-const readline = require("readline");
-const Console = require("console");
-const rl = readline.createInterface({
+//const readline = require("readline");
+//const Console = require("console");
+/*const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
-});
+});*/
+const rl = require('readline-sync')
 
 /*rl.question("What is your name ? ", function(name) {
     rl.question("Where do you live ? ", function(country) {
@@ -243,14 +257,16 @@ async function run() {
     let grilleDeMocktus;
     let exitToken = false;
     //let response = await new Promise(resolve => {
-    let response = new Promise(function(myResolve, myReject) {
-        rl.question("Quelle grille voulez-vous? Entrez un de ces paramètres: [string=mot;nombre=taille;rien=random]", function (selection) {
-            grilleDeMocktus = new GrilleDeMocktus(selection);
-            console.log('Votre sélection %s vient de générer une nouvelle grille de Mocktus.',selection);
-            myResolve(selection);
-        })
-    });
-    response.then((value) => {grilleDeMocktus.play()});
+    //let response = new Promise(function(myResolve, myReject) {
+    let selection = rl.question("Quelle grille voulez-vous? Entrez un de ces paramètres: [string=mot;nombre=taille;rien=random]\n");
+    grilleDeMocktus = new GrilleDeMocktus(selection);
+    console.log('Votre sélection %s vient de générer une nouvelle grille de Mocktus.', selection);
+        //myResolve(selection);
+    grilleDeMocktus.play();
+    //});
+    //grilleDeMocktus.play();
+    //});
+    //response.then((value) => {grilleDeMocktus.play()});
     /*rl.question("Quelle grille voulez-vous? Entrez un de ces paramètres: [string=mot;nombre=taille;rien=random]", await function (selection) {
         grilleDeMocktus = new GrilleDeMocktus(selection);
         console.log('Votre sélection ${selection} vient de générer une nouvelle grille de Mocktus.');
